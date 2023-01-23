@@ -75,12 +75,11 @@ jobs:
         run: |-
           gsutil cp "$GITHUB_SHA.zip" "gs://$BUILD_ARTIFACTS_BUCKET/$COMPONENT/$GITHUB_SHA.zip"
 
-      # Call the API to trigger the workflow that updates the version in DRM_Apps_Deply
       - name: Deploy
         if: github.event_name == 'push'
-        uses: sknups/deploy-action@v1.2
+        uses: benc-uk/workflow-dispatch@v1
         with:
-          image: ${{ env.COMPONENT }}
-          tag: ${{ github.sha }}
-          auth: ${{ secrets.DEPLOY_TOKEN }}
-          url: ${{ secrets.DEPLOY_API_URL }}
+          workflow: update_version.yml
+          repo: sknups/wholesale-terraform
+          token:  ${{ secrets.DEPLOY_TOKEN }}
+          inputs: '{ "component": "${{ env.COMPONENT }}", "version": "${{ github.sha }}" }'
