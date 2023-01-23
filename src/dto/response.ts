@@ -10,7 +10,7 @@ export class GetAllResponseDTO {
   sku:  { [sku: string]: number } 
 }
 
-export class GetResponseDTO {
+export class  StockResponseDTO {
   constructor(sku: string, stock: number) {
     this.sku = sku;
     this.stock = stock;

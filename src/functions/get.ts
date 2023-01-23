@@ -3,7 +3,7 @@ import { Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { AllConfig } from 'config/all-config';
 import logger from '../helpers/logger';
-import { GetResponseDTO } from '../dto/response';
+import { StockResponseDTO } from '../dto/response';
 import { AbstractFunction } from './abstract-function';
 import { getSkuFromRequestPath } from './url-params';
 import { AppError, SKU_STOCK_NOT_INITIALISED } from '../app.errors';
@@ -30,6 +30,6 @@ export class Get extends AbstractFunction {
       throw new AppError(SKU_STOCK_NOT_INITIALISED(sku))
     }
     
-    res.status(StatusCodes.OK).json(new GetResponseDTO(sku,count));
+    res.status(StatusCodes.OK).json(new StockResponseDTO(sku,count));
   }
 }
