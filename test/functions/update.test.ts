@@ -100,7 +100,7 @@ describe("function - update", () => {
     await instance(req, res);
 
     expect(res.statusCode).toEqual(StatusCodes.OK);
-    expect(res._getString()).toEqual("OK");
+    expect(res._getString()).toEqual("{\"sku\":\"SKU_0001\",\"stock\":0}");
   });
 
   it("resets stock to zero, if stock is negative after decrement", async () => {

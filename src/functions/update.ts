@@ -6,6 +6,7 @@ import logger from '../helpers/logger';
 import { AbstractFunction } from './abstract-function';
 import { getSkuFromRequestPath } from './url-params';
 import { AppError, SKU_OUT_OF_STOCK, SKU_STOCK_NOT_INITIALISED } from '../app.errors';
+import { StockResponseDTO } from '../dto/response';
 
 export class Update extends AbstractFunction {
 
@@ -40,6 +41,6 @@ export class Update extends AbstractFunction {
       throw new AppError(SKU_OUT_OF_STOCK(sku))
     }
 
-    res.sendStatus(StatusCodes.OK);
+    res.status(StatusCodes.OK).json(new StockResponseDTO(sku,count));
   }
 }
