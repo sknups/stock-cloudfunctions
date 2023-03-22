@@ -13,18 +13,11 @@ common_args="${common_args} --memory=128MB"
 
 npm run build
 
-name=stock-create-tmp
+name=stock-save-tmp
 if [[ -z "$1" || "$1" == "$name" ]]; then
   gcloud functions deploy $name \
     $common_args \
-    --entry-point=create 
-fi
-
-name=stock-delete-all-tmp
-if [[ -z "$1" || "$1" == "$name" ]]; then
-  gcloud functions deploy $name \
-    $common_args \
-    --entry-point=deleteAll 
+    --entry-point=save 
 fi
 
 name=stock-get-all-tmp
@@ -46,4 +39,25 @@ if [[ -z "$1" || "$1" == "$name" ]]; then
   gcloud functions deploy $name \
     $common_args \
     --entry-point=update 
+fi
+
+name=stock-create-issue-tmp
+if [[ -z "$1" || "$1" == "$name" ]]; then
+  gcloud functions deploy $name \
+    $common_args \
+    --entry-point=createIssue 
+fi
+
+name=stock-update-issued-tmp
+if [[ -z "$1" || "$1" == "$name" ]]; then
+  gcloud functions deploy $name \
+    $common_args \
+    --entry-point=updateIssued 
+fi
+
+name=stock-delete-tmp
+if [[ -z "$1" || "$1" == "$name" ]]; then
+  gcloud functions deploy $name \
+    $common_args \
+    --entry-point=delete 
 fi
