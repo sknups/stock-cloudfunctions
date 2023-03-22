@@ -3,10 +3,11 @@ import { Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { AllConfig } from 'config/all-config';
 import logger from '../helpers/logger';
-import { StockResponseDTO } from '../dto/response';
 import { AbstractFunction } from './abstract-function';
-import { getSkuFromRequestPath } from './url-params';
-import { AppError, SKU_STOCK_NOT_INITIALISED } from '../app.errors';
+import { AppError, STOCK_NOT_FOUND } from '../app.errors';
+import { getPathParameters, isRetailerRequest } from '../helpers/url';
+import { RetailerStockMapper } from '../mapper/retailer/stock-mapper-retailer';
+import { InternalStockMapper } from '../mapper/internal/stock-mapper-internal';
 
 export class Get extends AbstractFunction {
 
@@ -20,16 +21,20 @@ export class Get extends AbstractFunction {
       return;
     }
 
-    const sku = getSkuFromRequestPath(req);
-
-    logger.debug(`Received request for inventory of '${sku}'`);
-
-    const count = await this.repository.get(sku);
-
-    if (count == null) {
-      throw new AppError(SKU_STOCK_NOT_INITIALISED(sku))
-    }
+    //TODO get platform and sku from path when all callers supply it 
+    const {sku} = getPathParameters<{sku:string}>('(.*)/:sku',req);
+    const platform = 'SKN'
     
-    res.status(StatusCodes.OK).json(new StockResponseDTO(sku,count));
+    logger.debug(`'${platform}' '${sku}'`);
+  
+    const entity = await this.repository.get(platform, sku);
+
+    if (entity == null) {
+      throw new AppError(STOCK_NOT_FOUND(platform, sku))
+    }
+
+    const mapper =  isRetailerRequest(req) ? new RetailerStockMapper() : new InternalStockMapper();
+    
+    res.status(StatusCodes.OK).json(mapper.toDto(entity));
   }
 }

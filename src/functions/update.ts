@@ -1,46 +1,33 @@
-import { Request } from '@google-cloud/functions-framework';
-import { Response } from 'express';
-import { StatusCodes } from 'http-status-codes';
-import { AllConfig } from 'config/all-config';
-import logger from '../helpers/logger';
-import { AbstractFunction } from './abstract-function';
-import { getSkuFromRequestPath } from './url-params';
-import { AppError, SKU_OUT_OF_STOCK, SKU_STOCK_NOT_INITIALISED } from '../app.errors';
-import { StockResponseDTO } from '../dto/response';
+import { Request } from "@google-cloud/functions-framework";
+import { Response } from "express";
+import { AllConfig } from "../config/all-config";
+import { CreateIssue, CreateIssueParameters } from "./create-issue";
+import { getPathParameters } from "../helpers/url";
+import { StatusCodes } from "http-status-codes";
 
-export class Update extends AbstractFunction {
-
+/**
+ * TODO delete when callers migrated to CreateIssue
+ *
+ * @deprecated - replaced by CreateIssue
+ */
+export class Update extends CreateIssue {
+  
   public constructor(config :AllConfig){
     super(config)
   }
 
-  public async handler (req: Request, res: Response): Promise<void> {
+  public async handler(req: Request, res: Response): Promise<void> {
+    const params: CreateIssueParameters = {
+      ...getPathParameters<{ sku: string }>("(.*)/:sku", req),
+      platform: 'SKN',
+      type: 'purchase'
+    };
+
     if (req.method != 'PUT') {
       res.status(StatusCodes.METHOD_NOT_ALLOWED).send(`${req.method} not allowed`);
       return;
     }
-
-    const sku = getSkuFromRequestPath(req);
-
-    logger.debug(`Received request to decrement stock for '${sku}'`);
-
-    let count = await this.repository.get(sku);
-
-    if (count == null) {
-      throw new AppError(SKU_STOCK_NOT_INITIALISED(sku))
-    }
-
-    if (count <= 0) {
-      throw new AppError(SKU_OUT_OF_STOCK(sku))
-    }
-
-    count = await this.repository.decrement(sku);
-
-    if (count < 0) {
-      await this.repository.update(sku,0);
-      throw new AppError(SKU_OUT_OF_STOCK(sku))
-    }
-
-    res.status(StatusCodes.OK).json(new StockResponseDTO(sku,count));
+    
+    await this.perform(params, req, res);
   }
 }

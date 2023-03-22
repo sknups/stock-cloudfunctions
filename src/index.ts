@@ -1,29 +1,21 @@
-import "reflect-metadata";
-import { HttpFunction } from "@google-cloud/functions-framework";
-import { AllConfig, loadConfig } from "./config/all-config";
-import { functionWrapper } from "./helpers/wrapper";
-import logger from "./helpers/logger";
-
 if (process.env.NODE_ENV == "development") {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   require("source-map-support").install();
   require("dotenv/config");
 }
 
+import "reflect-metadata";
+import { HttpFunction } from "@google-cloud/functions-framework";
+import { AllConfig, loadConfig } from "./config/all-config";
+import { functionWrapper } from "./helpers/wrapper";
+import logger from "./helpers/logger";
+
 const CONFIG: Promise<AllConfig> = loadConfig(process.env);
 CONFIG.catch(logger.error);
 
-export const create: HttpFunction = async (req, res) =>
+export const save: HttpFunction = async (req, res) =>
   functionWrapper(
-    (await import("./functions/create.js")).Create,
-    req,
-    res,
-    CONFIG
-  );
-
-export const deleteAll: HttpFunction = async (req, res) =>
-  functionWrapper(
-    (await import("./functions/delete-all.js")).DeleteAll,
+    (await import("./functions/save.js")).Save,
     req,
     res,
     CONFIG
@@ -45,9 +37,26 @@ export const get: HttpFunction = async (req, res) =>
     CONFIG
   );
 
+//TODO - remove when callers moved to createIssue
 export const update: HttpFunction = async (req, res) =>
   functionWrapper(
     (await import("./functions/update.js")).Update,
+    req,
+    res,
+    CONFIG
+  );
+
+export const createIssue: HttpFunction = async (req, res) =>
+  functionWrapper(
+    (await import("./functions/create-issue.js")).CreateIssue,
+    req,
+    res,
+    CONFIG
+  );
+
+export const deleteStock: HttpFunction = async (req, res) =>
+  functionWrapper(
+    (await import("./functions/delete.js")).Delete,
     req,
     res,
     CONFIG
@@ -62,11 +71,8 @@ export const update: HttpFunction = async (req, res) =>
 export const devRouter: HttpFunction = async (req, res) => {
   const path = req.path.split("/")[1];
   switch (path) {
-    case "stock-create":
-      await create(req, res);
-      break;
-    case "stock-delete-all":
-      await deleteAll(req, res);
+    case "stock-save":
+      await save(req, res);
       break;
     case "stock-get-all":
       await getAll(req, res);
@@ -74,6 +80,13 @@ export const devRouter: HttpFunction = async (req, res) => {
     case "stock-get":
       await get(req, res);
       break;
+    case "stock-create-issue":
+      await createIssue(req, res);
+      break;
+    case "stock-delete":
+      await deleteStock(req, res);
+      break;
+    //TODO remove when callers moved to stock-create-issue"
     case "stock-update":
       await update(req, res);
       break;
