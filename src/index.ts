@@ -62,6 +62,14 @@ export const deleteStock: HttpFunction = async (req, res) =>
     CONFIG
   );
 
+  export const updateAll: HttpFunction = async (req, res) =>
+  functionWrapper(
+    (await import("./functions/update-all.js")).UpdateAll,
+    req,
+    res,
+    CONFIG
+  );
+
 /**
  * For dev testing only
  *
@@ -89,6 +97,9 @@ export const devRouter: HttpFunction = async (req, res) => {
     //TODO remove when callers moved to stock-create-issue"
     case "stock-update":
       await update(req, res);
+      break;
+    case "stock-update-all":
+      await updateAll(req, res);
       break;
     default:
       res.status(404).send(`Endpoint ${path} not found\n`);
