@@ -61,3 +61,11 @@ if [[ -z "$1" || "$1" == "$name" ]]; then
     $common_args \
     --entry-point=delete 
 fi
+
+
+name=stock-update-all-tmp
+if [[ -z "$1" || "$1" == "$name" ]]; then
+  gcloud functions deploy $name \
+    $common_args \
+    --entry-point=updateAll 
+fi
