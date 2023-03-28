@@ -1,4 +1,4 @@
-# item-cloudfunctions
+# stock-cloudfunctions
 Cloud functions related to stock
 
 ## Local development
@@ -59,15 +59,24 @@ npm test
 
 ## Functions
 
-### stock-create
+### stock-save
+
+Performs upsert of stock for a SKU.
 
 ```bash
-curl -X POST \
+curl -X PUT \
      -H 'Content-Type: application/json' \
-     http://localhost:8080/stock-create -d '{"sku":"SKU_0001","operation":"CREATE","maxQty":123}'
+     http://localhost:8080/stock-save/SKN/SKU_0001 -d '{"maximum":123}'
 ```
 
 ### stock-get
+
+```bash
+curl http://localhost:8080/stock-get/SKN/SKU_0001
+curl http://localhost:8080/stock-get/SKU_0001 (deprecated)
+```
+
+Call without platform is still supported but deprecated
 
 ```bash
 curl http://localhost:8080/stock-get/SKU_0001
@@ -76,19 +85,42 @@ curl http://localhost:8080/stock-get/SKU_0001
 ### stock-get-all
 
 ```bash
-curl http://localhost:8080/stock-get-all
+curl http://localhost:8080/stock-get-all/SKN
 ```
 
-### stock-delete-all
+### stock-delete
 
 ```bash
-curl -X DELETE http://localhost:8080/stock-delete-all
+curl -X DELETE http://localhost:8080/stock-delete/SKN/SKU_0001
 ```
 
-### stock-update
+### stock-update (deprecated)
+
+Aliased to `stock-create-issue` with platform set to `SKN` and
+type set to `purchase` 
 
 ```bash
 curl -X PUT http://localhost:8080/stock-update/SKU_0001
+```
+
+### stock-create-issue
+
+```bash
+curl -X POST http://localhost:8080/stock-create-issue/SKN/SKU_0001/purchase
+```
+
+```bash
+curl -X POST http://localhost:8080/stock-create-issue/SKN/SKU_0001/claim
+```
+
+### stock-update-all
+
+Update all fields related to stock. Used in an emergency to repopulate Redis. 
+
+```bash
+curl -X PUT \
+     -H 'Content-Type: application/json' \
+     http://localhost:8080/stock-update-all/SKN/SKU_0001 -d '{"maximum":123}'
 ```
 
 ## Test GCP Deployment

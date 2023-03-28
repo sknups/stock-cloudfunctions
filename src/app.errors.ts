@@ -37,32 +37,48 @@ export const REDIS_CONNECTION_ERROR: ErrorReason = {
   statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
 };
 
-export const INVALID_CREATE_OPERATION_ERROR = (operation: string) :ErrorReason => {
+export const ALLOCATION_GREATER_THAN_MAXIMUM_ERROR = (platform: string, sku: string, withheld: number, reserved: number) :ErrorReason => {
   return {
-    code: 'STOCK_00200',
-    message: `Invalid create operation '${operation}'`,
+    code: 'STOCK_00201',
+    message: `sum of withheld (${withheld}), reserved for claim (${reserved}) and issued greater than maximum . platform: ${platform}, sku ${sku}`,
     statusCode: StatusCodes.BAD_REQUEST,
   };
 };
 
-export const SKU_MISSING_FROM_URL_ERROR :ErrorReason =  {
-    code: 'STOCK_00300',
-    message: `sku must be provided in URL`,
+export const INVALID_SAVE_PROPERTY_CANT_BE_CHANGED_ERROR = (platform: string, sku: string, property: string) :ErrorReason => {
+  return {
+    code: 'STOCK_00201',
+    message: `Invalid save of property '${property}' can't be changed. ${platform}, ${sku}`,
     statusCode: StatusCodes.BAD_REQUEST,
+  };
 };
 
-export const SKU_STOCK_NOT_INITIALISED = (sku: string) :ErrorReason => {
+export const INVALID_URL_PATH_ERROR =  (route: string) :ErrorReason =>  {
+  return {
+    code: 'STOCK_00300',
+    message: `Invalid request path, does not match ${route}`,
+    statusCode: StatusCodes.BAD_REQUEST,
+  }
+};
+
+export const NOT_AVAILABLE_TO_RETAILER: ErrorReason = {
+  code: 'STOCK_00301',
+  message: 'Not available to retailer',
+  statusCode: StatusCodes.FORBIDDEN,
+}
+
+export const STOCK_NOT_FOUND = (platform: string, sku: string) :ErrorReason => {
   return {
     code: 'STOCK_00400',
-    message: `Stock for '${sku}' has not been initialised`,
+    message: `Stock not found. '${platform}', '${sku}'`,
     statusCode: StatusCodes.NOT_FOUND,
   };
 };
 
-export const SKU_OUT_OF_STOCK = (sku: string) :ErrorReason => {
+export const OUT_OF_STOCK = (platform: string, sku: string) :ErrorReason => {
   return {
     code: 'STOCK_00500',
-    message: `${sku}' is out of stock`,
+    message: `Out of stock. '${platform}', '${sku}'`,
     statusCode: StatusCodes.FORBIDDEN,
   };
 };
