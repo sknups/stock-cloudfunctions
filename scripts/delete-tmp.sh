@@ -9,3 +9,4 @@ gcloud functions delete stock-update-tmp $common_args
 gcloud functions delete stock-create-issue-tmp $common_args
 gcloud functions delete stock-update-issued-tmp $common_args
 gcloud functions delete stock-delete-tmp $common_args
+gcloud functions delete stock-update-all-tmp $common_args
