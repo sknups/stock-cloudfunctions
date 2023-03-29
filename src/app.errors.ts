@@ -47,7 +47,7 @@ export const ALLOCATION_GREATER_THAN_MAXIMUM_ERROR = (platform: string, sku: str
 
 export const INVALID_SAVE_PROPERTY_CANT_BE_CHANGED_ERROR = (platform: string, sku: string, property: string) :ErrorReason => {
   return {
-    code: 'STOCK_00201',
+    code: 'STOCK_00202',
     message: `Invalid save of property '${property}' can't be changed. ${platform}, ${sku}`,
     statusCode: StatusCodes.BAD_REQUEST,
   };
