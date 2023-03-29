@@ -97,7 +97,7 @@ describe("function - update", () => {
       "issued": 11,
       "issue": 11,
       "maximum": 1000,
-      "platform": "SKN",
+      "platform": "TEST",
       "reserved": 0,
       "sku":"SKU_001",
       "stock": 990,
