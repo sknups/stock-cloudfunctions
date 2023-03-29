@@ -5,7 +5,7 @@ import { IN_STOCK_ENTITY, OUT_OF_STOCK_ENTITY, RANDOM_ALLOCATION_ENTITY, RESERVE
 const repository = {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   exists: jest.fn().mockImplementation((platform: string, sku: string, type :'purchase' | 'claim') => {
-    if (platform != "SKN") {
+    if (platform != "TEST" && platform != "SKN") {
       return false;
     }
 
@@ -25,7 +25,7 @@ const repository = {
   available: jest.fn(),
    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   issue: jest.fn().mockImplementation((platform: string, sku: string, type :'purchase' | 'claim') => {
-    if (platform != "SKN") {
+    if (platform != "TEST" && platform != "SKN") {
       return null;
     }
 
@@ -41,7 +41,7 @@ const repository = {
     }
   }),
   get: jest.fn().mockImplementation((platform: string, sku: string) => {
-    if (platform != "SKN") {
+    if (platform != "TEST" && platform != "SKN") {
       return null;
     }
 
@@ -57,7 +57,7 @@ const repository = {
     }
   }),
   getAll: jest.fn().mockImplementation((platform: string) => {
-    if (platform != "SKN") {
+    if (platform != "TEST") {
       return [];
     }
     return [IN_STOCK_ENTITY, RESERVED_ENTITY, WITHHELD_ENTITY];

@@ -467,9 +467,10 @@ export class StockRepository {
 
        if expires ~= nil then
          expires = tonumber(expires)
+         return redis.call('HSET',skuKey,'${EXPIRES_FIELD}', expires, '${RESERVED_FOR_CLAIM_FIELD}',reservedForClaim, '${WITHHELD_FIELD}',withheld)
        end
        
-       return redis.call('HSET',skuKey,'${EXPIRES_FIELD}', expires, '${RESERVED_FOR_CLAIM_FIELD}',reservedForClaim, '${WITHHELD_FIELD}',withheld)
+       return redis.call('HSET',skuKey,'${RESERVED_FOR_CLAIM_FIELD}',reservedForClaim, '${WITHHELD_FIELD}',withheld)
         
       `,
     });
