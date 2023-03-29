@@ -29,17 +29,17 @@ async function createRedisEntry(entry = defaultValues): Promise<void> {
   await StockRepository.redis.hset(
     key(platform, sku),
     "maximum",
-    entry.maximum,
+    `${entry.maximum}`,
     "allocation",
-    entry.allocation.toString(),
+    `${entry.allocation.toString()}`,
     "reservedForClaim",
-    entry.reservedForClaim,
+    `${entry.reservedForClaim}`,
     "withheld",
-    entry.withheld,
+    `${entry.withheld}`,
     "expires",
-    entry.expires == null ? "" : entry.expires.getTime(),
+    `${entry.expires == null ? "" : entry.expires.getTime()}`,
     "issued",
-    entry.issued
+    `${entry.issued}`
   );
 }
 
@@ -75,11 +75,12 @@ describe("repository - stock", () => {
   });
 
   describe("save", () => {
-    beforeEach(async () => {
-      await createRedisEntry();
-    });
-
     describe("update existing record", () => {
+
+      beforeEach(async () => {
+        await createRedisEntry();
+      });
+
       it("asserts that maximum cant be changed for existing entry", async () => {
         await expect(
           instance.save({
@@ -142,16 +143,17 @@ describe("repository - stock", () => {
           `${defaultValues.maximum}`
         );
         expect(await StockRepository.redis.hget(key(), "allocation")).toEqual(
-          defaultValues.allocation
+          `${defaultValues.allocation}`
         );
         expect(
           await StockRepository.redis.hget(key(), "reservedForClaim")
-        ).toEqual(defaultValues.reservedForClaim);
+        ).toEqual(`${defaultValues.reservedForClaim}`);
+
         expect(await StockRepository.redis.hget(key(), "withheld")).toEqual(
-          defaultValues.withheld
+          `${defaultValues.withheld}`
         );
         expect(await StockRepository.redis.hget(key(), "expires")).toEqual(
-          defaultValues.expires
+          ``
         );
         expect(await StockRepository.redis.hget(key(), "issued")).toEqual(
           `${defaultValues.issued}`
