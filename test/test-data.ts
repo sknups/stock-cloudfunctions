@@ -2,7 +2,7 @@ import { Allocation, AvailableStock } from "../src/persistence/stock-entity";
 
 export const IN_STOCK_ENTITY = {
     sku: 'SKU_001',
-    platform: 'SKN',
+    platform: 'TEST',
     reservedForClaim: 0,
     withheld: 0,
     expires: null,
@@ -14,7 +14,7 @@ export const IN_STOCK_ENTITY = {
 
 export const RESERVED_ENTITY = {
     sku: 'SKU_002',
-    platform: 'SKN',
+    platform: 'TEST',
     reservedForClaim: 100,
     withheld: 0,
     expires: null,
@@ -26,7 +26,7 @@ export const RESERVED_ENTITY = {
 
 export const WITHHELD_ENTITY = {
     sku: 'SKU_003',
-    platform: 'SKN',
+    platform: 'TEST',
     reservedForClaim: 0,
     withheld: 200,
     expires: null,
@@ -39,7 +39,7 @@ export const WITHHELD_ENTITY = {
 
 export const RANDOM_ALLOCATION_ENTITY = {
     sku: 'SKU_004',
-    platform: 'SKN',
+    platform: 'TEST',
     reservedForClaim: 0,
     withheld: 200,
     expires: null,
@@ -51,7 +51,7 @@ export const RANDOM_ALLOCATION_ENTITY = {
 
 export const OUT_OF_STOCK_ENTITY = {
     sku: 'SKU_005',
-    platform: 'SKN',
+    platform: 'TEST',
     reservedForClaim: 0,
     withheld: 200,
     expires: null,

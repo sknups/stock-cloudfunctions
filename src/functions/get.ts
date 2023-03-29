@@ -5,7 +5,7 @@ import { AllConfig } from 'config/all-config';
 import logger from '../helpers/logger';
 import { AbstractFunction } from './abstract-function';
 import { AppError, STOCK_NOT_FOUND } from '../app.errors';
-import { getPathParameters, isRetailerRequest } from '../helpers/url';
+import { getPlatformAndSkuFromPath, isRetailerRequest } from '../helpers/url';
 import { RetailerStockMapper } from '../mapper/retailer/stock-mapper-retailer';
 import { InternalStockMapper } from '../mapper/internal/stock-mapper-internal';
 
@@ -21,10 +21,8 @@ export class Get extends AbstractFunction {
       return;
     }
 
-    //TODO get platform and sku from path when all callers supply it 
-    const {sku} = getPathParameters<{sku:string}>('(.*)/:sku',req);
-    const platform = 'SKN'
-    
+    const {platform, sku} = getPlatformAndSkuFromPath(req);
+
     logger.debug(`'${platform}' '${sku}'`);
   
     const entity = await this.repository.get(platform, sku);

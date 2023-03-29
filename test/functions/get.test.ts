@@ -42,7 +42,7 @@ describe("function - get", () => {
     expect(res.statusCode).toEqual(StatusCodes.METHOD_NOT_ALLOWED);
   });
 
-  it("returns 400 if no sku is supplied in path", async () => {
+  it("returns 400 if no sku or platform is supplied in path", async () => {
     req.path = "/"
     
     await instance(req, res);
@@ -71,7 +71,7 @@ describe("function - get", () => {
       "expires": null,
       "issued": 10,
       "maximum": 1000,
-      "platform": "SKN",
+      "platform": "TEST",
       "reserved": 0,
       "sku":"SKU_001",
       "stock": 990,
@@ -87,48 +87,11 @@ describe("function - get", () => {
     expect(mocks.repository.get).toBeCalledWith(platform, sku);
     expect(res.statusCode).toEqual(StatusCodes.OK);
     expect(res._getJSON()).toEqual({
-      "platform": "SKN",
+      "platform": "TEST",
       "sku":"SKU_001",
       "stock": 990,
       "available": 990,
     });
   });
-
-  it("defaults to SKN platform if not supplied", async () => {
-    req.path = `/${sku}`;
-
-    await instance(req, res);
-
-    expect(mocks.repository.get).toBeCalledWith(platform, sku);
-    expect(res.statusCode).toEqual(StatusCodes.OK);
-    expect(res._getJSON()).toEqual({
-      "allocation": "SEQUENTIAL",
-      "available": 990,
-      "expires": null,
-      "issued": 10,
-      "maximum": 1000,
-      "platform": "SKN",
-      "reserved": 0,
-      "sku":"SKU_001",
-      "stock": 990,
-      "withheld": 0,
-    });
-  });
-
-  it("defaults to SKN platform if not supplied by retailer", async () => {
-    req.path = `/retailer/${sku}`;
-    
-    await instance(req, res);
-
-    expect(mocks.repository.get).toBeCalledWith(platform, sku);
-    expect(res.statusCode).toEqual(StatusCodes.OK);
-    expect(res._getJSON()).toEqual({
-      "platform": "SKN",
-      "sku":"SKU_001",
-      "stock": 990,
-      "available": 990,
-    });
-  });
-
 
 });

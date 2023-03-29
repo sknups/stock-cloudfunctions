@@ -15,7 +15,7 @@ const CONFIG: Promise<AllConfig> = loadConfig(testEnv);
 const handler: HttpFunction = async (req, res) => functionWrapper(GetAll, req, res, CONFIG);
 functions.http("stock-get-all", handler);
 
-const platform = "SKN";
+const platform = "TEST";
 
 let instance: HttpFunction;
 let res = new MockExpressResponse();
@@ -74,7 +74,7 @@ describe("function - get-all", () => {
         expires: null,
         issued: 10,
         maximum: 1000,
-        platform: "SKN",
+        platform: "TEST",
         reserved: 0,
         sku: "SKU_001",
         stock: 990,
@@ -86,7 +86,7 @@ describe("function - get-all", () => {
         expires: null,
         issued: 10,
         maximum: 1000,
-        platform: "SKN",
+        platform: "TEST",
         reserved: 100,
         sku: "SKU_002",
         stock: 890,
@@ -98,7 +98,7 @@ describe("function - get-all", () => {
         expires: null,
         issued: 10,
         maximum: 1000,
-        platform: "SKN",
+        platform: "TEST",
         reserved: 0,
         sku: "SKU_003",
         stock: 790,
@@ -116,19 +116,19 @@ describe("function - get-all", () => {
     expect(res._getJSON()).toEqual([
       {
         available: 990,
-        platform: "SKN",
+        platform: "TEST",
         sku: "SKU_001",
         stock: 990,
       },
       {
         available: 890,
-        platform: "SKN",
+        platform: "TEST",
         sku: "SKU_002",
         stock: 890,
       },
       {
         available: 790,
-        platform: "SKN",
+        platform: "TEST",
         sku: "SKU_003",
         stock: 790,
       },
