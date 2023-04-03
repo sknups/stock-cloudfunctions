@@ -2,6 +2,7 @@ import { StockDto } from "../dto/stock.dto";
 import { AvailableStock } from "../persistence/stock-entity";
 
 export abstract class AbstractStockMapper<T extends StockDto> {
+
   public toDto(entity: AvailableStock): T {
     const baseDto: StockDto = this.toBaseDto(entity);
     return this.toDtoFromBaseDto(entity, baseDto);
@@ -13,8 +14,6 @@ export abstract class AbstractStockMapper<T extends StockDto> {
     return {
       sku: entity.sku,
       platform: entity.platform,
-      stock: entity.available,
-      available: entity.available,
     };
   }
 }

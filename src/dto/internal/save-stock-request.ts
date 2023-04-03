@@ -16,20 +16,20 @@ export class SaveRequestDTO {
   maximum: number;
 
   /**
-   * The quantity reserved for claims
+   * The maximum quantity available to purchase for SKU
    */
   @Min(0)
   @IsInt()
   @IsOptional()
-  reserved: number | null;
+  maximumForPurchase?: number | null;
 
   /**
-   * The quantity that has been withheld
+   * The maximum quantity available to claim for SKU.
    */
   @Min(0)
   @IsInt()
   @IsOptional()
-  withheld: number | null;
+  maximumForClaim?: number | null;
 
   /**
    * The expiry date of SKU in ISO 8601 format. After this date the SKU

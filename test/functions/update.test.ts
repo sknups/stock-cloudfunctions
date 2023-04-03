@@ -92,16 +92,18 @@ describe("function - update", () => {
 
     expect(res._getJSON()).toEqual({
       "allocation": "SEQUENTIAL",
-      "available": 990,
       "expires": null,
       "issued": 11,
       "issue": 11,
+      "issuedForClaim": 0,
+      "issuedForPurchase": 11,
       "maximum": 1000,
+      "maximumForClaim": 0,
+      "maximumForPurchase": 1000,
       "platform": "TEST",
-      "reserved": 0,
       "sku":"SKU_001",
-      "stock": 990,
-      "withheld": 0,
+      "availableForClaim": 0,
+      "availableForPurchase": 989,
     });
   });
 
