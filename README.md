@@ -73,13 +73,6 @@ curl -X PUT \
 
 ```bash
 curl http://localhost:8080/stock-get/SKN/SKU_0001
-curl http://localhost:8080/stock-get/SKU_0001 (deprecated)
-```
-
-Call without platform is still supported but deprecated
-
-```bash
-curl http://localhost:8080/stock-get/SKU_0001
 ```
 
 ### stock-get-all

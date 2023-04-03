@@ -1,27 +1,33 @@
 import { RedisConfig } from "../config/redis-config";
 import {Redis, RedisOptions} from "ioredis";
-import { AppError, ALLOCATION_GREATER_THAN_MAXIMUM_ERROR, INVALID_SAVE_PROPERTY_CANT_BE_CHANGED_ERROR, OUT_OF_STOCK, STOCK_NOT_FOUND } from "../app.errors";
+import { AppError, INVALID_SAVE_PROPERTY_CANT_BE_CHANGED_ERROR, OUT_OF_STOCK, STOCK_NOT_FOUND, INVALID_PROPERTIES_ERROR } from "../app.errors";
 import { Allocation, AvailableStock, BaseStockEntity, IssuedStock, StockEntity, UpdateStockEntity } from "./stock-entity";
 
 const MAXIMUM_FIELD = 'maximum'; 
-const RESERVED_FOR_CLAIM_FIELD ='reservedForClaim'; 
+const MAXIMUM_FOR_CLAIM_FIELD ='maximumForClaim'; 
+const MAXIMUM_FOR_PURCHASE_FIELD ='maximumForPurchase'; 
 const ISSUED_FIELD = 'issued'; 
-const WITHHELD_FIELD = 'withheld';
+const ISSUED_FOR_CLAIM_FIELD = 'issuedForClaim'; 
+const ISSUED_FOR_PURCHASE_FIELD = 'issuedForPurchase'; 
 const EXPIRES_FIELD = 'expires';
 const ALLOCATION_FIELD = 'allocation';
 
 const ALL_FIELDS = [
   MAXIMUM_FIELD,
+  MAXIMUM_FOR_CLAIM_FIELD,
+  MAXIMUM_FOR_PURCHASE_FIELD,
   ISSUED_FIELD,
-  RESERVED_FOR_CLAIM_FIELD,
-  WITHHELD_FIELD, 
+  ISSUED_FOR_CLAIM_FIELD,
+  ISSUED_FOR_PURCHASE_FIELD,
   EXPIRES_FIELD,
   ALLOCATION_FIELD,
 ]
 
 const LUA_ISSUED_OUT_OF_STOCK_ERROR = 'out of stock';
 const LUA_STOCK_NOT_FOUND_ERROR = 'stock no found';
-const LUA_UPDATE_GREATER_THAN_MAXIMUM_ERROR = 'allocated too large'
+const LUA_MAXIMUM_TO_LARGE_ERROR = 'maximum too large';
+const LUA_CLAIM_MAXIMUM_LESS_THAN_ISSUED_ERROR = 'claim maximum larger than current issued for claim';
+const LUA_PURCHASE_MAXIMUM_LESS_THAN_ISSUED_ERROR = 'purchase maximum larger than current issued for purchase'
 
 export class StockRepository {
   public static redis: Redis = null;
@@ -71,7 +77,9 @@ export class StockRepository {
     if (existing === null) {
       return await this.set({
         ...changes,
-        issued: 0 
+        issued: 0,
+        issuedForClaim: 0,
+        issuedForPurchase: 0,
        });
     }
 
@@ -82,26 +90,35 @@ export class StockRepository {
     if (changes.allocation != existing.allocation) {
       throw new AppError(INVALID_SAVE_PROPERTY_CANT_BE_CHANGED_ERROR(platform,sku,'allocation'));
     }
-  
+
     return await this.update(changes);
   }
 
   private async update(stock :UpdateStockEntity): Promise<AvailableStock> {
-    const {platform, sku, reservedForClaim, withheld, expires } = stock
+    const {platform, sku, maximumForClaim, maximumForPurchase, expires } = stock
+
     this._defineCustomCommands();
     try{ 
       const key = this._sku_key(platform,sku);
       await this._redis().update(
         key, 
-        reservedForClaim, 
-        withheld,
+        maximumForClaim, 
+        maximumForPurchase,
         expires === null ? null : expires.getTime());
     } catch (error){
+      let reason: string;
       switch(error?.message) {
         case LUA_STOCK_NOT_FOUND_ERROR:
           throw new AppError(STOCK_NOT_FOUND(platform, sku));
-        case LUA_UPDATE_GREATER_THAN_MAXIMUM_ERROR:
-          throw new AppError(ALLOCATION_GREATER_THAN_MAXIMUM_ERROR(platform, sku,withheld,reservedForClaim));
+        case LUA_MAXIMUM_TO_LARGE_ERROR:
+          reason = `Sum of maximumForClaim (${maximumForClaim}) and maximumForPurchased (${maximumForPurchase}) is greater than maximum`
+          throw new AppError(INVALID_PROPERTIES_ERROR(platform, sku, reason ));
+        case LUA_CLAIM_MAXIMUM_LESS_THAN_ISSUED_ERROR:
+          reason = `maximumForClaim (${maximumForClaim}) is less than issuedForClaim`
+          throw new AppError(INVALID_PROPERTIES_ERROR(platform, sku, reason ));
+        case LUA_PURCHASE_MAXIMUM_LESS_THAN_ISSUED_ERROR:
+          reason = `maximumForPurchase (${maximumForPurchase}) is less than issuedForPurchase`
+          throw new AppError(INVALID_PROPERTIES_ERROR(platform, sku, reason ));
         default:
           throw new Error(`update failed '${error?.message}'`)
       }
@@ -126,18 +143,45 @@ export class StockRepository {
    * @returns the new / updated stock entry
    */
   public async set(changes :StockEntity): Promise<AvailableStock> {
-    const {platform, sku, maximum, issued, reservedForClaim, withheld, expires, allocation} = changes
+    const {
+      platform, 
+      sku, 
+      maximum, 
+      issued, 
+      issuedForClaim, 
+      issuedForPurchase, 
+      maximumForClaim, 
+      maximumForPurchase, 
+      expires, 
+      allocation
+    } = changes
 
-    if (issued + reservedForClaim + withheld > maximum) {
-      throw new AppError(ALLOCATION_GREATER_THAN_MAXIMUM_ERROR(platform,sku,  withheld, reservedForClaim ));
+
+
+    if ((maximumForClaim ?? 0) + (maximumForPurchase ?? 0) > maximum) {
+      const reason = `Sum of maximumForClaim (${maximumForClaim}) and maximumForPurchased (${maximumForPurchase}) is greater than maximum ${maximum}`
+      throw new AppError(INVALID_PROPERTIES_ERROR(platform, sku, reason ));
     }
+
+    if (issuedForClaim + issuedForPurchase > issued) {
+      const reason = `Sum of issuedForClaim (${issuedForClaim}) and issuedForPurchase (${issuedForPurchase}) is greater than issued (${issued})`
+      throw new AppError(INVALID_PROPERTIES_ERROR(platform, sku, reason ));
+    }
+
+    if (issued > maximum) {
+      const reason = `Issued (${issued}) greater than maximum (${maximum})`
+      throw new AppError(INVALID_PROPERTIES_ERROR(platform, sku, reason ));
+    }
+
 
     await this._redis().hset(this._sku_key(platform,sku), 
       MAXIMUM_FIELD, maximum, 
+      MAXIMUM_FOR_CLAIM_FIELD, maximumForClaim === null ? '': maximumForClaim, 
+      MAXIMUM_FOR_PURCHASE_FIELD, maximumForPurchase === null ? '': maximumForPurchase, 
       ISSUED_FIELD, issued, 
-      RESERVED_FOR_CLAIM_FIELD, reservedForClaim, 
-      WITHHELD_FIELD, withheld,
-      EXPIRES_FIELD, expires === null ? null : expires.getTime(),
+      ISSUED_FOR_CLAIM_FIELD, issuedForClaim,
+      ISSUED_FOR_PURCHASE_FIELD, issuedForPurchase,
+      EXPIRES_FIELD, expires === null ? '' : expires.getTime(),
       ALLOCATION_FIELD, allocation
     );
 
@@ -216,7 +260,6 @@ export class StockRepository {
     try{ 
       issued = await this._redis().issue(this._sku_key(platform,sku), type, new Date().getTime());
     } catch (error){
-      console.debug(error)
       switch(error?.message) {
         case LUA_STOCK_NOT_FOUND_ERROR:
           throw new AppError(STOCK_NOT_FOUND(platform, sku));
@@ -249,10 +292,12 @@ export class StockRepository {
 
     const values = await this._redis().hmget(
       this._sku_key(platform,sku), 
-      MAXIMUM_FIELD,
-      ISSUED_FIELD,
-      RESERVED_FOR_CLAIM_FIELD,
-      WITHHELD_FIELD, 
+      MAXIMUM_FIELD, 
+      MAXIMUM_FOR_CLAIM_FIELD, 
+      MAXIMUM_FOR_PURCHASE_FIELD,
+      ISSUED_FIELD, 
+      ISSUED_FOR_CLAIM_FIELD,
+      ISSUED_FOR_PURCHASE_FIELD,
       EXPIRES_FIELD,
       ALLOCATION_FIELD,
     );
@@ -261,23 +306,26 @@ export class StockRepository {
       return null;
     }
     
-    const available = await this.available(platform, sku, 'purchase');
+    const availableForClaim = await this.available(platform, sku, 'claim');
+    const availableForPurchase = await this.available(platform, sku, 'purchase');
 
-    if (available === null) {
+    if (availableForClaim === null || availableForPurchase == null) {
       return null;
     }
-    
 
     return {
       sku,
       platform,
-      available,
+      availableForClaim,
+      availableForPurchase,
       maximum: Number(values[0]),
-      issued: Number(values[1]),
-      reservedForClaim: Number(values[2]),
-      withheld: Number(values[3]),
-      expires: values[4] ? new Date(Number(values[4])): null,
-      allocation: Allocation[values[5]]
+      maximumForClaim: values[1] ? Number(values[1]) : null,
+      maximumForPurchase: values[2] ? Number(values[2]) : null,
+      issued: Number(values[3]),
+      issuedForClaim: Number(values[4]),
+      issuedForPurchase: Number(values[5]),
+      expires: values[6] ? new Date(Number(values[6])): null,
+      allocation: Allocation[values[7]]
     }
   }
 
@@ -324,7 +372,7 @@ export class StockRepository {
   }
 
   private _platform_key(platform: string): string {
-    return `stock:${platform}`;
+    return `${this.config.redisKeyPrefix}:${platform}`;
   }
 
   private _redis(): Redis {
@@ -366,6 +414,15 @@ export class StockRepository {
       readOnly: true,
       numberOfKeys: 1,
       lua: `
+        -- wrapper for redis.error_reply so code
+        -- can run with ioredis-mock
+        function error(val)
+          if redis.error_reply then
+            return redis.error_reply(val)
+          end
+         return val
+        end
+
         local skuKey = KEYS[1]
         local claim = ARGV[1] == 'claim'
         local now = tonumber(ARGV[2])
@@ -374,7 +431,7 @@ export class StockRepository {
 
         -- key does not exist
         if maximum == nil then
-          return redis.error_reply('${LUA_STOCK_NOT_FOUND_ERROR}');
+          return error('${LUA_STOCK_NOT_FOUND_ERROR}');
         end 
 
         local expires = tonumber(redis.call('HGET',skuKey,'${EXPIRES_FIELD}'));
@@ -384,14 +441,39 @@ export class StockRepository {
           return 0;
         end
 
-        local maximum = tonumber(redis.call('HGET',skuKey,'${MAXIMUM_FIELD}'));
         local issued = tonumber(redis.call('HGET',skuKey,'${ISSUED_FIELD}'));
-        local withheld = tonumber(redis.call('HGET',skuKey,'${WITHHELD_FIELD}'));
-        local reservedForClaim = tonumber(redis.call('HGET',skuKey,'${RESERVED_FOR_CLAIM_FIELD}'));
-        local available = maximum - issued - reservedForClaim - withheld;
+        local available = maximum - issued
 
+        if (available <= 0) then
+          return 0;
+        end
+ 
         if claim then 
-          available = maximum - issued - withheld;
+          local maximumForClaim = tonumber(redis.call('HGET',skuKey,'${MAXIMUM_FOR_CLAIM_FIELD}'));
+          local issuedForClaim = tonumber(redis.call('HGET',skuKey,'${ISSUED_FOR_CLAIM_FIELD}'));
+
+          if maximumForClaim then
+            local availableForClaim = maximumForClaim - issuedForClaim;
+            if (available < availableForClaim) then
+              return available;
+            else
+              return availableForClaim;
+            end
+          else
+            return available;
+          end
+        end
+
+        local maximumForPurchase = tonumber(redis.call('HGET',skuKey,'${MAXIMUM_FOR_PURCHASE_FIELD}'));
+        local issuedForPurchase = tonumber(redis.call('HGET',skuKey,'${ISSUED_FOR_PURCHASE_FIELD}'));
+
+        if maximumForPurchase then
+          local availableForPurchase = maximumForPurchase - issuedForPurchase;
+          if (available < availableForPurchase) then
+            return available;
+          else
+            return availableForPurchase;
+          end
         end
 
         return available;
@@ -401,6 +483,15 @@ export class StockRepository {
       readOnly: false,
       numberOfKeys: 1,
       lua: `
+        -- wrapper for redis.error_reply so code
+        -- can run with ioredis-mock
+        function error(val)
+          if redis.error_reply then
+            return redis.error_reply(val)
+          end
+         return val
+        end
+    
         local skuKey = KEYS[1]
         local claim = ARGV[1] == 'claim'
         local now = tonumber(ARGV[2])
@@ -409,35 +500,50 @@ export class StockRepository {
 
         -- key does not exist
         if maximum == nil then
-          return  redis.error_reply('${LUA_STOCK_NOT_FOUND_ERROR}'); 
+          return  error('${LUA_STOCK_NOT_FOUND_ERROR}'); 
         end 
 
         local expires = tonumber(redis.call('HGET',skuKey,'${EXPIRES_FIELD}'));
 
-        -- sku expired, so not available 
         if (expires and expires < now) then
-          return  redis.error_reply('${LUA_ISSUED_OUT_OF_STOCK_ERROR}'); 
-        end
+          return error('${LUA_ISSUED_OUT_OF_STOCK_ERROR}'); 
+        end    
 
         local issued = tonumber(redis.call('HGET',skuKey,'${ISSUED_FIELD}'));
-        local withheld = tonumber(redis.call('HGET',skuKey,'${WITHHELD_FIELD}'));
-        local reservedForClaim = tonumber(redis.call('HGET',skuKey,'${RESERVED_FOR_CLAIM_FIELD}'));
-        local available = maximum - issued - reservedForClaim - withheld;
-
-        if claim then 
-          available = maximum - issued - withheld;
-        end
+        local available = maximum - issued;
 
         if available <= 0 then
-          return redis.error_reply('${LUA_ISSUED_OUT_OF_STOCK_ERROR}'); 
+          return error('${LUA_ISSUED_OUT_OF_STOCK_ERROR}'); 
         end
+   
+        if (claim) then
+          local maximumForClaim = tonumber(redis.call('HGET',skuKey,'${MAXIMUM_FOR_CLAIM_FIELD}'));
 
-        if claim and reservedForClaim > 0 then
-          -- cant use transactions within a Lua script
-          redis.call('HINCRBY',skuKey,'${RESERVED_FOR_CLAIM_FIELD}',-1);
+          if (maximumForClaim) then
+            local issuedForClaim = tonumber(redis.call('HGET',skuKey,'${ISSUED_FOR_CLAIM_FIELD}'));
+            local availableForClaim = maximumForClaim - issuedForClaim;
+
+            if availableForClaim <= 0 then
+              return error('${LUA_ISSUED_OUT_OF_STOCK_ERROR}'); 
+            end
+          end
+    
+          redis.call('HINCRBY',skuKey,'${ISSUED_FOR_CLAIM_FIELD}',1);
           return redis.call('HINCRBY',skuKey,'${ISSUED_FIELD}',1);
         end
-        
+       
+        local maximumForPurchase = tonumber(redis.call('HGET',skuKey,'${MAXIMUM_FOR_PURCHASE_FIELD}'));
+       
+        if (maximumForPurchase) then
+          local issuedForPurchase = tonumber(redis.call('HGET',skuKey,'${ISSUED_FOR_PURCHASE_FIELD}'));
+          local availableForPurchase = maximumForPurchase - issuedForPurchase;
+
+          if availableForPurchase <= 0 then
+            return error('${LUA_ISSUED_OUT_OF_STOCK_ERROR}'); 
+          end
+        end
+
+        redis.call('HINCRBY',skuKey,'${ISSUED_FOR_PURCHASE_FIELD}',1);
         return redis.call('HINCRBY',skuKey,'${ISSUED_FIELD}',1);
       `,
     });
@@ -446,33 +552,60 @@ export class StockRepository {
       readOnly: false,
       numberOfKeys: 1,
       lua: `
+        -- wrapper for redis.error_reply so code
+        -- can run with ioredis-mock
+        function error(val)
+          if redis.error_reply then
+            return redis.error_reply(val)
+          end
+         return val
+        end
+
         local skuKey = KEYS[1]
-        local reservedForClaim = tonumber(ARGV[1])
-        local withheld = tonumber(ARGV[2])
+        local maximumForClaim = tonumber(ARGV[1])
+        local maximumForPurchase = tonumber(ARGV[2])
         local expires = tonumber(ARGV[3])
         
         local maximum = tonumber(redis.call('HGET',skuKey,'${MAXIMUM_FIELD}'))
 
-        -- key does not exist
         if maximum == nil then
-          return redis.error_reply('${LUA_STOCK_NOT_FOUND_ERROR}')
+          return error('${LUA_STOCK_NOT_FOUND_ERROR}')
         end 
 
-        local issued = tonumber(redis.call('HGET',skuKey,'${ISSUED_FIELD}'))
-        local allocated = reservedForClaim + issued + withheld
-       
-       if (allocated > maximum) then 
-         return  redis.error_reply('${LUA_UPDATE_GREATER_THAN_MAXIMUM_ERROR}') 
-       end
+        if ((maximumForClaim or 0) + (maximumForPurchase or 0 ) > maximum) then 
+          return error('${LUA_MAXIMUM_TO_LARGE_ERROR}') 
+        end
 
-       if expires ~= nil then
-         expires = tonumber(expires)
-         return redis.call('HSET',skuKey,'${EXPIRES_FIELD}', expires, '${RESERVED_FOR_CLAIM_FIELD}',reservedForClaim, '${WITHHELD_FIELD}',withheld)
-       end
+        local issuedForClaim = tonumber(redis.call('HGET',skuKey,'${ISSUED_FOR_CLAIM_FIELD}'))
        
-       return redis.call('HSET',skuKey,'${RESERVED_FOR_CLAIM_FIELD}',reservedForClaim, '${WITHHELD_FIELD}',withheld)
-        
-      `,
+        if (maximumForClaim and (issuedForClaim > maximumForClaim)) then 
+          return error('${LUA_CLAIM_MAXIMUM_LESS_THAN_ISSUED_ERROR}') 
+        end
+
+        local issuedForPurchase = tonumber(redis.call('HGET',skuKey,'${ISSUED_FOR_PURCHASE_FIELD}'))
+
+        if (maximumForPurchase and (issuedForPurchase > maximumForPurchase)) then 
+          return error('${LUA_PURCHASE_MAXIMUM_LESS_THAN_ISSUED_ERROR}') 
+        end
+
+        if expires then
+          redis.call('HSET',skuKey,'${EXPIRES_FIELD}', expires)
+        else
+          redis.call('HSET',skuKey,'${EXPIRES_FIELD}','')
+        end
+
+        if maximumForClaim then
+          redis.call('HSET',skuKey,'${MAXIMUM_FOR_CLAIM_FIELD}', maximumForClaim)
+        else
+          redis.call('HSET',skuKey,'${MAXIMUM_FOR_CLAIM_FIELD}','')
+        end
+
+        if maximumForPurchase then
+        redis.call('HSET',skuKey,'${MAXIMUM_FOR_PURCHASE_FIELD}', maximumForPurchase)
+        else
+          redis.call('HSET',skuKey,'${MAXIMUM_FOR_PURCHASE_FIELD}','')
+        end
+        `,
     });
   }
 }

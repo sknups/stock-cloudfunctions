@@ -7,6 +7,7 @@ export type RedisConfig = {
   redisTls: boolean,
   redisPassword: string
   redisDb: number
+  redisKeyPrefix: string
 }
 
 const CONFIG: ConfigFragment<RedisConfig> = {
@@ -16,6 +17,7 @@ const CONFIG: ConfigFragment<RedisConfig> = {
     REDIS_TLS: Joi.bool().default('false'),
     REDIS_DB: Joi.number().default('0'),
     REDIS_PASSWORD: Joi.string(),
+    REDIS_KEY_PREFIX: Joi.string().default('stock'),
   },
   load: (envConfig: NodeJS.Dict<string>): RedisConfig => {
     return {
@@ -24,6 +26,7 @@ const CONFIG: ConfigFragment<RedisConfig> = {
       redisPort: Number.parseInt(envConfig.REDIS_PORT),
       redisPassword: envConfig.REDIS_PASSWORD,
       redisDb: Number.parseInt(envConfig.REDIS_DB),
+      redisKeyPrefix: envConfig.REDIS_KEY_PREFIX,
     };
   },
 };

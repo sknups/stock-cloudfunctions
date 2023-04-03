@@ -14,39 +14,76 @@ import { Allocation } from "../../src/dto/internal/save-stock-request";
 
 const CONFIG: Promise<AllConfig> = loadConfig(testEnv);
 
-const handler: HttpFunction = async (req, res) =>
-  functionWrapper(UpdateAll, req, res, CONFIG);
+const handler: HttpFunction = async (req, res) => functionWrapper(UpdateAll, req, res, CONFIG);
 functions.http("stock-update-all", handler);
-
-let res = new MockExpressResponse();
-let req;
-let instance: HttpFunction;
 
 const { sku, platform } = IN_STOCK_ENTITY;
 
+function _testBody(): any {
+  return {
+    maximum: 1000,
+  };
+}
+
+async function _sendRequest(
+  bodyOverrides: any = {},
+  bodyModifier = (_body: any) => { },
+  platform = IN_STOCK_ENTITY.platform,
+  sku = IN_STOCK_ENTITY.sku,
+): Promise<MockExpressResponse> {
+  const body = { ..._testBody(), ...bodyOverrides };
+  bodyModifier(body);
+  const req = getMockReq({path:`/${platform}/${sku}`, method: 'PUT', body});
+  const res = new MockExpressResponse();
+  const instance = getFunction('stock-update-all') as HttpFunction;
+  await instance(req, res);
+  return res;
+}
+
 describe("function - update-all", () => {
-  beforeEach(function () {
-    instance = getFunction("stock-update-all") as HttpFunction;
-    res = new MockExpressResponse();
 
-    req = getMockReq({
-      path: `/${platform}/${sku}`,
-      method: "PUT",
-      body: { maximum: 1000 },
+  beforeEach(function() {
+    mocks.repository.set.mockResolvedValue({
+      sku,
+      platform,
+      expires: null,
+      maximum: _testBody().maximum,
+      maximumForClaim: null,
+      maximumForPurchase: null,
+      allocation: 'SEQUENTIAL',
+      issued: 0,
+      issuedForClaim: 0,
+      issuedForPurchase: 0,
+      available: _testBody().maximum,
     });
+  })
 
+  afterEach(function () {
     mocks.mockClear();
   });
 
   it("invalid method returns 405", async () => {
-    req.method = "POST";
+    const req = getMockReq({ 
+      path: `/${platform}/${sku}`,
+      method: "POST",
+      body: {maximum: 1000},
+    });
+    const res = new MockExpressResponse();
+    const instance = getFunction('stock-update-all') as HttpFunction;
+
     await instance(req, res);
 
     expect(res.statusCode).toEqual(StatusCodes.METHOD_NOT_ALLOWED);
   });
 
   it("returns 400 if no sku or platform is supplied in path", async () => {
-    req.path = "/";
+    const req = getMockReq({ 
+      path: `/`,
+      method: "PUT",
+      body: {maximum: 1000},
+    });
+    const res = new MockExpressResponse();
+    const instance = getFunction('stock-update-all') as HttpFunction;
 
     await instance(req, res);
 
@@ -55,7 +92,13 @@ describe("function - update-all", () => {
   });
 
   it("returns 403 if called by retailer", async () => {
-    req.path = `/retailer/${req.path}`;
+    const req = getMockReq({ 
+      path: `/retailer/${platform}/${sku}`,
+      method: "PUT",
+      body: {maximum: 1000},
+    });
+    const res = new MockExpressResponse();
+    const instance = getFunction('stock-update-all') as HttpFunction;
 
     await instance(req, res);
 
@@ -65,120 +108,126 @@ describe("function - update-all", () => {
 
 
   it("asserts maximum must be a number", async () => {
-    req.body = {maximum: "test"}
-    await instance(req, res);
+    const res = await _sendRequest( {maximum: 'invalid'})
 
     expect(res.statusCode).toEqual(StatusCodes.BAD_REQUEST);
     expect(res._getString()).toContain("maximum must be an integer number");
   });
 
   it("asserts maximum must be a integer", async () => {
-    req.body = {maximum: 12.55}
-    await instance(req, res);
+    const res = await _sendRequest( {maximum: 12.5})
 
     expect(res.statusCode).toEqual(StatusCodes.BAD_REQUEST);
     expect(res._getString()).toContain("maximum must be an integer number");
   });
 
   it("asserts maximum must be greater than 0", async () => {
-    req.body = {maximum: 0}
-    await instance(req, res);
+    const res = await _sendRequest( {maximum: 0})
 
     expect(res.statusCode).toEqual(StatusCodes.BAD_REQUEST);
     expect(res._getString()).toContain("maximum must be a positive number");
   });
 
-  it("asserts withheld must be a number", async () => {
-    req.body = {maximum: 100, withheld: "not a number"}
-    await instance(req, res);
+  it("asserts maximumForClaim must be a number", async () => {
+    const res =  await _sendRequest({maximumForClaim:"TEST"});
 
     expect(res.statusCode).toEqual(StatusCodes.BAD_REQUEST);
-    expect(res._getString()).toContain("withheld must be an integer number");
+    expect(res._getString()).toContain("maximumForClaim must be an integer number");
   });
 
-  it("asserts withheld must be a integer", async () => {
-    req.body = {maximum: 100, withheld: 23.55}
-    await instance(req, res);
+  it("asserts maximumForClaim must be a integer", async () => {
+    const res =  await _sendRequest({maximumForClaim:1.23});
 
     expect(res.statusCode).toEqual(StatusCodes.BAD_REQUEST);
-    expect(res._getString()).toContain("withheld must be an integer number");
+    expect(res._getString()).toContain("maximumForClaim must be an integer number");
   });
 
-  it("asserts withheld cant be less than zero", async () => {
-    req.body = {maximum: 100, withheld: -1}
-    await instance(req, res);
+  it("asserts maximumForClaim must be positive", async () => {
+    const res =  await _sendRequest({maximumForClaim:-1});
 
     expect(res.statusCode).toEqual(StatusCodes.BAD_REQUEST);
-    expect(res._getString()).toContain("withheld must not be less than 0");
+    expect(res._getString()).toContain("maximumForClaim must not be less than 0");
   });
 
-  it("asserts withheld can be zero", async () => {
-    req.body = {maximum: 100, withheld: 0}
 
-    mocks.repository.set.mockResolvedValue(Promise.resolve({
-      platform,
-      sku,
-      allocation: Allocation.SEQUENTIAL,
-      expires: null,
-      issued: 0,
-      maximum: 100,
-      available: 100,
-      withheld: 0,
-      reservedForClaim: 0,
+  it("asserts maximumForClaim is optional", async () => {
+    const res =  await _sendRequest({}, body => delete body.maximumForClaim);
+    expect(res.statusCode).toEqual(StatusCodes.OK);
+  });
+
+
+  it("asserts maximumForClaim can be zero", async () => {
+    const res =  await _sendRequest({maximumForClaim:0});
+
+    expect(mocks.repository.set).toBeCalledWith(expect.objectContaining({
+      maximumForClaim: 0,
     }));
-
-    await instance(req, res);
 
     expect(res.statusCode).toEqual(StatusCodes.OK);
   });
 
-  it("asserts reserved must be a number", async () => {
-    req.body = {maximum: 100, reserved: "not a number"}
-    await instance(req, res);
+  it("asserts maximumForClaim can be null", async () => {
+    const res =  await _sendRequest({maximumForClaim:null});
 
-    expect(res.statusCode).toEqual(StatusCodes.BAD_REQUEST);
-    expect(res._getString()).toContain("reserved must be an integer number");
-  });
-
-  it("asserts reserved must be a integer", async () => {
-    req.body = {maximum: 100, reserved: 23.55}
-    await instance(req, res);
-
-    expect(res.statusCode).toEqual(StatusCodes.BAD_REQUEST);
-    expect(res._getString()).toContain("reserved must be an integer number");
-  });
-
-  it("asserts reserved cant be less than zero", async () => {
-    req.body = {maximum: 100, reserved: -1}
-    await instance(req, res);
-
-    expect(res.statusCode).toEqual(StatusCodes.BAD_REQUEST);
-    expect(res._getString()).toContain("reserved must not be less than 0");
-  });
-
-  it("asserts reserved can be zero", async () => {
-    req.body = {maximum: 100, reserved: 0}
-
-    mocks.repository.set.mockResolvedValue(Promise.resolve({
-      platform,
-      sku,
-      allocation: Allocation.SEQUENTIAL,
-      expires: null,
-      issued: 0,
-      maximum: 100,
-      available: 100,
-      withheld: 0,
-      reservedForClaim: 0,
+    expect(mocks.repository.set).toBeCalledWith(expect.objectContaining({
+      maximumForClaim: null,
     }));
-
-    await instance(req, res);
 
     expect(res.statusCode).toEqual(StatusCodes.OK);
   });
+
+  it("asserts maximumForPurchase must be a number", async () => {
+    const res =  await _sendRequest({maximumForPurchase:"TEST"});
+
+    expect(res.statusCode).toEqual(StatusCodes.BAD_REQUEST);
+    expect(res._getString()).toContain("maximumForPurchase must be an integer number");
+  });
+
+  it("asserts maximumForPurchase must be a integer", async () => {
+    const res =  await _sendRequest({maximumForPurchase:1.23});
+
+    expect(res.statusCode).toEqual(StatusCodes.BAD_REQUEST);
+    expect(res._getString()).toContain("maximumForPurchase must be an integer number");
+  });
+
+  it("asserts maximumForPurchase must be positive", async () => {
+    const res =  await _sendRequest({maximumForPurchase:-1});
+
+    expect(res.statusCode).toEqual(StatusCodes.BAD_REQUEST);
+    expect(res._getString()).toContain("maximumForPurchase must not be less than 0");
+  });
+
+
+  it("asserts maximumForPurchase is optional", async () => {
+    const res =  await _sendRequest({}, body => delete body.maximumForPurchase);
+    expect(res.statusCode).toEqual(StatusCodes.OK);
+  });
+
+
+  it("asserts maximumForPurchase can be zero", async () => {
+    const res =  await _sendRequest({maximumForPurchase:0});
+
+    expect(mocks.repository.set).toBeCalledWith(expect.objectContaining({
+      maximumForPurchase: 0,
+    }));
+
+    expect(res.statusCode).toEqual(StatusCodes.OK);
+  });
+
+  it("asserts maximumForPurchase can be null", async () => {
+    const res =  await _sendRequest({maximumForClaim:null});
+
+    expect(mocks.repository.set).toBeCalledWith(expect.objectContaining({
+      maximumForPurchase: null,
+    }));
+
+    expect(res.statusCode).toEqual(StatusCodes.OK);
+  });
+
+
 
   it("asserts expires must be a valid ISO 8601 date", async () => {
-    req.body = {maximum: 100, expires: "21/05/2023"}
-    await instance(req, res);
+    const res = await _sendRequest({ expires: "21/05/2023"})
 
     expect(res.statusCode).toEqual(StatusCodes.BAD_REQUEST);
     expect(res._getString()).toContain("expires must be a valid ISO 8601 date string");
@@ -186,71 +235,55 @@ describe("function - update-all", () => {
 
 
   it("asserts allocation must be a valid type", async () => {
-    req.body = {maximum: 100, allocation: 'boo'}
-    await instance(req, res);
+    const res = await _sendRequest({ allocation: "boo"})
 
     expect(res.statusCode).toEqual(StatusCodes.BAD_REQUEST);
     expect(res._getString()).toContain("allocation must be one of the following values: SEQUENTIAL, RANDOM");
-  });
-
-  it("asserts only maximum is required", async () => {
-    req.body = {maximum: 100}
-
-    mocks.repository.set.mockResolvedValue(Promise.resolve({
-      platform,
-      sku,
-      allocation: Allocation.SEQUENTIAL,
-      expires: null,
-      issued: 0,
-      maximum: 100,
-      available: 100,
-      withheld: 0,
-      reservedForClaim: 0,
-    }));
-
-    await instance(req, res);
-    expect(res.statusCode).toEqual(StatusCodes.OK);
   });
 
 
   it("passes correct data to repository", async () => {
     const body = {
       issued: 15,
-      reserved: 10,
-      withheld: 23,
       maximum: 20000,
+      maximumForClaim: 1,
+      maximumForPurchase: 100,
+      issuedForClaim: 1,
+      issuedForPurchase: 14,
       allocation: Allocation.RANDOM,
       expires: "2023-12-01",
     };
 
     //Ignoring expires in this test
-    const available =
-      body.maximum - body.issued - body.reserved - body.withheld;
+    const available = body.maximum - body.issued;
 
     mocks.repository.set.mockResolvedValue({
       sku,
       platform,
-      reservedForClaim: body.reserved,
-      withheld: body.withheld,
       expires: new Date(body.expires),
       maximum: body.maximum,
+      maximumForClaim: body.maximumForClaim,
+      maximumForPurchase: body.maximumForPurchase,
       allocation: body.allocation,
       issued: body.issued,
+      issuedForClaim: body.issuedForClaim,
+      issuedForPurchase: body.issuedForPurchase,
       available,
     });
 
-    req.body = body;
-    await instance(req, res);
+    const res = await _sendRequest({...body})
 
     expect(mocks.repository.set).toBeCalledWith({
       allocation: "RANDOM",
       expires: new Date("2023-12-01"),
       issued: 15,
+      issuedForClaim: 1,
+      issuedForPurchase: 14,
       maximum: 20000,
+      maximumForClaim: 1,
+      maximumForPurchase: 100,
       platform: "TEST",
-      reservedForClaim: 10,
       sku: "SKU_001",
-      withheld: 23,
     });
 
     expect(res.statusCode).toEqual(StatusCodes.OK);
@@ -259,43 +292,36 @@ describe("function - update-all", () => {
   it("correct data is returned", async () => {
     const body = {
       issued: 15,
-      reserved: 10,
-      withheld: 23,
       maximum: 20000,
       allocation: Allocation.RANDOM,
       expires: "2023-12-01",
     };
 
     //Ignoring expires in this test
-    const available =
-      body.maximum - body.issued - body.reserved - body.withheld;
+    const availableForPurchase = body.maximum - body.issued;
 
     mocks.repository.set.mockResolvedValue({
       sku,
       platform,
-      reservedForClaim: body.reserved,
-      withheld: body.withheld,
       expires: new Date(body.expires),
       maximum: body.maximum,
       allocation: body.allocation,
       issued: body.issued,
-      available,
+      availableForPurchase,
+      availableForClaim: 0
     });
 
-    req.body = body;
-    await instance(req, res);
+    const res = await _sendRequest({...body})
 
     expect(res._getJSON()).toEqual({
       allocation: "RANDOM",
-      available: 19952,
+      availableForPurchase: 19985,
+      availableForClaim: 0,
       expires: "2023-12-01T00:00:00.000Z",
       issued: 15,
       maximum: 20000,
       platform: "TEST",
-      reserved: 10,
       sku: "SKU_001",
-      stock: 19952,
-      withheld: 23,
     });
   });
 });

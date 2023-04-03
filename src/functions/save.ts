@@ -9,6 +9,7 @@ import { Allocation, SaveRequestDTO } from '../dto/internal/save-stock-request';
 import { AbstractFunction } from './abstract-function';
 import { getPlatformAndSkuFromPath, isRetailerRequest } from '../helpers/url';
 import { InternalStockMapper } from '../mapper/internal/stock-mapper-internal';
+import { BaseStockEntity } from 'persistence/stock-entity';
 
 export class Save extends AbstractFunction {
 
@@ -31,17 +32,17 @@ export class Save extends AbstractFunction {
 
     const createReq: SaveRequestDTO = await parseAndValidateRequestData(SaveRequestDTO, req);
    
-    const {maximum, reserved, withheld, expires, allocation} =  createReq
+    const {maximum, maximumForClaim, maximumForPurchase, expires, allocation} =  createReq
 
     logger.debug(`Received request to save stock for platform: '${platform}', sku: '${sku}'`);
 
-    const changes = {
+    const changes: BaseStockEntity = {
       platform,
       sku,
       maximum,
       allocation : allocation? allocation: Allocation.SEQUENTIAL,
-      reservedForClaim: reserved? reserved : 0,
-      withheld: withheld ? withheld : 0,
+      maximumForClaim: maximumForClaim != null && maximumForClaim != undefined ? maximumForClaim : null,
+      maximumForPurchase: maximumForPurchase != null && maximumForPurchase != undefined ? maximumForPurchase : null,
       expires: expires ? new Date(expires) : null,
     }
     

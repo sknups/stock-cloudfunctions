@@ -8,5 +8,15 @@ export class UpdateAllRequestDTO extends SaveRequestDTO {
   @IsInt()
   @IsOptional()
   issued: number;
+
+  @Min(0)
+  @IsInt()
+  @IsOptional()
+  issuedForClaim: number;
+
+  @Min(0)
+  @IsInt()
+  @IsOptional()
+  issuedForPurchase: number;
 }
 

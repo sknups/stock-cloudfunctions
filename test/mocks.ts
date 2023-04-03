@@ -32,7 +32,7 @@ const repository = {
     switch (sku) {
       case IN_STOCK_ENTITY.sku:
         return decrement(IN_STOCK_ENTITY,type);
-      case RANDOM_ALLOCATION_ENTITY.sku:
+        case RANDOM_ALLOCATION_ENTITY.sku:
         return decrement(RANDOM_ALLOCATION_ENTITY,type);
       case OUT_OF_STOCK_ENTITY.sku:
         throw new AppError(OUT_OF_STOCK(platform, sku));
@@ -66,12 +66,30 @@ const repository = {
 
 function decrement(current: AvailableStock, type :'purchase' | 'claim'): IssuedStock {
   const newStock = { ...current};
-  newStock.issued = newStock.issued + 1;
 
-  if (type === 'claim' && newStock.reservedForClaim > 0 ){
-    newStock.reservedForClaim =  newStock.reservedForClaim - 1;
+  if (type === 'claim') {
+    newStock.issued = newStock.issued + 1;
+    newStock.issuedForClaim = newStock.issuedForClaim + 1; 
+    newStock.availableForClaim =  newStock.maximum - newStock.issued;
+
+    if (newStock.maximumForClaim !=null) {
+      newStock.availableForClaim = newStock.maximumForClaim - newStock.issuedForClaim;
+    }
+
+    return {
+      ...newStock,
+     issue: newStock.issued 
+    };  
   }
+  
+  newStock.issued = newStock.issued + 1;
+  newStock.issuedForPurchase = newStock.issuedForPurchase + 1; 
+  newStock.availableForPurchase =  newStock.maximum - newStock.issued;
 
+  if (newStock.maximumForPurchase != null) {
+    newStock.availableForPurchase = newStock.maximumForPurchase - newStock.issuedForPurchase;
+  }
+  
   return {
     ...newStock,
    issue: newStock.issued 
