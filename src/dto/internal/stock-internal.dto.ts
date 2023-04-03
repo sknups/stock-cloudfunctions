@@ -15,19 +15,29 @@ export class InternalStockDto extends StockDto {
   issued: number
 
   /**
+   * The the number of items issued for claims
+   */
+  issuedForClaim: number
+
+  /**
+   * The the number of items issued for purchase
+   */
+  issuedForPurchase: number
+
+  /**
   * The maximum for SKU 
   */
   maximum: number;
 
   /**
-   * remaining reserved for claims
+   * The maximum available for claim
    */
-  reserved: number;
+  maximumForClaim: number;
 
   /**
-  * the withheld quantity
+  *  The maximum available for purchase
   */
-  withheld: number;
+  maximumForPurchase: number;
 
   /**
    * The expiry date of SKU in ISO 8601 format. After this date the SKU
@@ -41,4 +51,17 @@ export class InternalStockDto extends StockDto {
    * RANDOM - allocates pseudorandom issue numbers
    */
   allocation: string;
+
+
+  /**
+   * The advertised available stock for
+   * purchase
+   */
+  availableForPurchase: number;
+
+  /**
+  * The advertised available stock for
+  * purchase
+  */
+  availableForClaim: number;
 }

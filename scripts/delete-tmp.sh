@@ -7,6 +7,5 @@ gcloud functions delete stock-get-all-tmp $common_args
 gcloud functions delete stock-get-tmp $common_args
 gcloud functions delete stock-update-tmp $common_args
 gcloud functions delete stock-create-issue-tmp $common_args
-gcloud functions delete stock-update-issued-tmp $common_args
 gcloud functions delete stock-delete-tmp $common_args
 gcloud functions delete stock-update-all-tmp $common_args

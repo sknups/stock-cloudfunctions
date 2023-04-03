@@ -9,10 +9,13 @@ export type IssuedStock = AvailableStock & {
 
 export type StockEntity = BaseStockEntity & {
   issued: number;
+  issuedForClaim: number;
+  issuedForPurchase: number;
 };
 
 export type AvailableStock = StockEntity & {
-  available: number;
+  availableForPurchase: number;
+  availableForClaim: number;
 };
 
 export type BaseStockEntity = UpdateStockEntity & {
@@ -23,7 +26,7 @@ export type BaseStockEntity = UpdateStockEntity & {
 export type UpdateStockEntity = {
   sku: string;
   platform: string;
-  reservedForClaim: number;
-  withheld: number;
+  maximumForClaim: number | null;
+  maximumForPurchase: number | null;
   expires: Date | null;
 };

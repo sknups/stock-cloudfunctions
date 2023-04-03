@@ -31,7 +31,7 @@ export class Get extends AbstractFunction {
       throw new AppError(STOCK_NOT_FOUND(platform, sku))
     }
 
-    const mapper =  isRetailerRequest(req) ? new RetailerStockMapper() : new InternalStockMapper();
+    const mapper = isRetailerRequest(req) ? new RetailerStockMapper() : new InternalStockMapper();
     
     res.status(StatusCodes.OK).json(mapper.toDto(entity));
   }

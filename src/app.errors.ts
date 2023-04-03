@@ -37,17 +37,17 @@ export const REDIS_CONNECTION_ERROR: ErrorReason = {
   statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
 };
 
-export const ALLOCATION_GREATER_THAN_MAXIMUM_ERROR = (platform: string, sku: string, withheld: number, reserved: number) :ErrorReason => {
+export const INVALID_PROPERTIES_ERROR = (platform: string, sku: string, reason: string) :ErrorReason => {
   return {
     code: 'STOCK_00201',
-    message: `sum of withheld (${withheld}), reserved for claim (${reserved}) and issued greater than maximum . platform: ${platform}, sku ${sku}`,
+    message: `${reason}. platform: ${platform}, sku ${sku}`,
     statusCode: StatusCodes.BAD_REQUEST,
   };
 };
 
 export const INVALID_SAVE_PROPERTY_CANT_BE_CHANGED_ERROR = (platform: string, sku: string, property: string) :ErrorReason => {
   return {
-    code: 'STOCK_00202',
+    code: 'STOCK_0020',
     message: `Invalid save of property '${property}' can't be changed. ${platform}, ${sku}`,
     statusCode: StatusCodes.BAD_REQUEST,
   };

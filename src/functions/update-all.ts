@@ -27,21 +27,33 @@ export class UpdateAll extends AbstractFunction {
       throw new AppError(NOT_AVAILABLE_TO_RETAILER);
     }
 
-    const {maximum, allocation, reserved, withheld, expires, issued} = await parseAndValidateRequestData(UpdateAllRequestDTO, req);
-   
     const {platform, sku} = getPlatformAndSkuFromPath(req);
 
     logger.debug(`Received request to set all stock data for '${platform}' '${sku}'`);
+
+    const {
+      maximum, 
+      allocation, 
+      maximumForClaim, 
+      maximumForPurchase, 
+      expires, 
+      issued,
+      issuedForClaim,
+      issuedForPurchase
+    } = await parseAndValidateRequestData(UpdateAllRequestDTO, req);
+   
 
     const updateEntity = {
       platform,
       sku,
       maximum,
-      allocation : allocation? allocation: Allocation.SEQUENTIAL,
-      reservedForClaim: reserved? reserved : 0,
-      withheld: withheld ? withheld : 0,
+      allocation : allocation ? allocation: Allocation.SEQUENTIAL,
+      maximumForClaim: maximumForClaim ?? null,
+      maximumForPurchase: maximumForPurchase ?? null,
       expires: expires ? new Date(expires) : null,
       issued: issued,
+      issuedForClaim: issuedForClaim,
+      issuedForPurchase: issuedForPurchase
     }
   
     const entity = await this.repository.set(updateEntity);

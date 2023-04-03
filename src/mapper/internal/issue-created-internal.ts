@@ -7,6 +7,7 @@ import * as seedrandom from 'seedrandom';
 
 export class InternalIssueCreatedStockMapper extends InternalStockMapper {
 
+ 
   protected toDtoFromBaseDto(entity: IssuedStock, baseDto: StockDto): InternalCreateIssueDto {
 
     const stockDto = super.toDtoFromBaseDto(entity, baseDto);

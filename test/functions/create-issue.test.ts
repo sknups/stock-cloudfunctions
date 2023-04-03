@@ -103,16 +103,18 @@ describe("function - create-issue", () => {
 
     expect(res._getJSON()).toEqual({
       "allocation": "SEQUENTIAL",
-      "available": 990,
+      "availableForPurchase": 989,
+      "availableForClaim": 0,
       "expires": null,
       "issued": 11,
       "issue": 11,
+      "issuedForClaim": 0,
+      "issuedForPurchase": 11,
       "maximum": 1000,
+      "maximumForClaim": 0,
+      "maximumForPurchase": 1000,
       "platform": "TEST",
-      "reserved": 0,
-      "sku":"SKU_001",
-      "stock": 990,
-      "withheld": 0,
+      "sku":"SKU_001"
     });
   });
 
@@ -121,19 +123,21 @@ describe("function - create-issue", () => {
 
     await instance(req, res);
 
-    expect(res._getJSON()).toEqual({
-      "allocation": "RANDOM",
-      "available": 790,
-      "expires": null,
-      "issued": 1,
-      "issue": 980,
-      "maximum": 1000,
-      "platform": "TEST",
-      "reserved": 0,
-      "sku":"SKU_004",
-      "stock": 790,
-      "withheld": 200,
-    });
+    expect(res._getJSON()).toEqual(
+      {
+        allocation: "RANDOM",
+        availableForPurchase: 9,
+        availableForClaim: 0,
+        expires: null,
+        issue: 9,
+        issued: 1,
+        issuedForClaim: 1,
+        issuedForPurchase: 0,
+        maximum: 10,
+        maximumForClaim: 1,
+        maximumForPurchase: 9,
+        platform: "TEST",
+        sku: "SKU_004",
+      });
   });
-
 });
