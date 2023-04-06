@@ -20,8 +20,8 @@
   "author": "",
   "private": true,
   "engines": {
-    "node": "16",
-    "npm": "8"
+    "node": "18",
+    "npm": "9"
   },
   "homepage": "https://github.com/SknUps/stock-cloudfunctions#README",
   "dependencies": {
