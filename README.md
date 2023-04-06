@@ -6,8 +6,8 @@ Cloud functions related to stock
 To execute locally, you will need:
 
 * nvm
-* Nodejs 16.x
-* npm 8.x
+* Nodejs 18.x
+* npm 9.x
 * Google Cloud CLI
   * Install (https://cloud.google.com/sdk/docs/install-sdk)
   * Authorization to access the development project 
