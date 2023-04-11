@@ -129,7 +129,7 @@ describe("function - create-issue", () => {
         availableForPurchase: 9,
         availableForClaim: 0,
         expires: null,
-        issue: 9,
+        issue: 5,
         issued: 1,
         issuedForClaim: 1,
         issuedForPurchase: 0,

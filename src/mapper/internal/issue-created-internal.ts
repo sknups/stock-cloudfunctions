@@ -2,8 +2,7 @@ import { StockDto } from '../../dto/stock.dto';
 import { Allocation, IssuedStock } from '../../persistence/stock-entity';
 import { InternalCreateIssueDto } from '../../dto/internal/create-issue-internal.dto';
 import { InternalStockMapper } from './stock-mapper-internal';
-import * as shuffle from 'fisher-yates-shuffle';
-import * as seedrandom from 'seedrandom';
+import { RandomIssuePicker } from '../../helpers/random-issue-picker';
 
 export class InternalIssueCreatedStockMapper extends InternalStockMapper {
 
@@ -28,8 +27,7 @@ export class InternalIssueCreatedStockMapper extends InternalStockMapper {
       } 
       
       case Allocation.RANDOM: { 
-        const issues = Array.from({length: maximum}, (_, index) => index + 1);
-        return shuffle(issues, seedrandom(sku))[issued-1]
+        return new RandomIssuePicker().issue(maximum, sku, issued)
       } 
 
       default: { 
