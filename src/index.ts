@@ -37,15 +37,6 @@ export const get: HttpFunction = async (req, res) =>
     CONFIG
   );
 
-//TODO - remove when callers moved to createIssue
-export const update: HttpFunction = async (req, res) =>
-  functionWrapper(
-    (await import("./functions/update.js")).Update,
-    req,
-    res,
-    CONFIG
-  );
-
 export const createIssue: HttpFunction = async (req, res) =>
   functionWrapper(
     (await import("./functions/create-issue.js")).CreateIssue,
@@ -93,10 +84,6 @@ export const devRouter: HttpFunction = async (req, res) => {
       break;
     case "stock-delete":
       await deleteStock(req, res);
-      break;
-    //TODO remove when callers moved to stock-create-issue"
-    case "stock-update":
-      await update(req, res);
       break;
     case "stock-update-all":
       await updateAll(req, res);
