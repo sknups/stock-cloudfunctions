@@ -25,11 +25,6 @@ export class CreateIssue extends AbstractFunction {
       res.status(StatusCodes.METHOD_NOT_ALLOWED).send(`${req.method} not allowed`);
       return;
     }
-  
-    await this.perform(params, req, res);
-  }
-
-  protected async perform(params: CreateIssueParameters, req: Request, res: Response): Promise<void> {
 
     if (isRetailerRequest(req)) {
       throw new AppError(NOT_AVAILABLE_TO_RETAILER);
