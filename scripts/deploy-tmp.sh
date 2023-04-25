@@ -9,7 +9,8 @@ common_args="${common_args} --vpc-connector=vpc-ac-europe-west2"
 common_args="${common_args} --set-env-vars REDIS_HOST=10.66.0.11,REDIS_PORT=6378,REDIS_TLS=true,REDIS_DB=0"
 common_args="${common_args} --set-secrets REDIS_PASSWORD=REDIS_PASSWORD:latest"
 common_args="${common_args} --service-account=stock-cf-read@drm-apps-01-43b0.iam.gserviceaccount.com"
-common_args="${common_args} --memory=128MB"
+common_args="${common_args} --memory=512MB"
+common_args="${common_args} --set-build-env-vars GOOGLE_NODE_RUN_SCRIPTS="
 
 npm run build
 
