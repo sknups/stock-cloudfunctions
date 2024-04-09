@@ -1,29 +1,24 @@
 {
   "name": "stock-cloudfunctions",
-  "main": "dist/index.js",
-  "scripts": {
-    "prebuild": "rimraf ./dist",
-    "build": "tsc",
-    "build:watch": "tsc -p tsconfig.dev.json -w",
-    "start:dev": "NODE_ENV=development functions-framework  --target=devRouter",
-    "start": "concurrently \"tsc -p tsconfig.dev.json -w\" \"nodemon --watch ./dist --exec npm run start:dev\"",
-    "test": "NODE_ENV=test LOG_FORMAT=simple LOG_LEVEL=error jest --config test/jest-config.json",
-    "lint": "eslint --ext .js,.ts . --fix",
-    "auth": "npx google-artifactregistry-auth",
-    "deploy": "scripts/deploy-tmp.sh",
-    "delete": "scripts/delete-tmp.sh"
-  },
+  "private": true,
+  "homepage": "https://github.com/SknUps/stock-cloudfunctions#README",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/SknUps/stock-cloudfunctions.git"
   },
-  "author": "",
-  "private": true,
-  "engines": {
-    "node": ">=18.14.2",
-    "npm": ">=9.5.0"
+  "author": "SKNUPS",
+  "main": "dist/index.js",
+  "scripts": {
+    "compile:watch": "tsc -p tsconfig.dev.json -w",
+    "precompile": "rimraf ./dist",
+    "compile": "tsc",
+    "delete": "scripts/delete-tmp.sh",
+    "deploy": "scripts/deploy-tmp.sh",
+    "lint": "eslint --ext .js,.ts . --fix",
+    "start": "concurrently \"tsc -p tsconfig.dev.json -w\" \"nodemon --watch ./dist --exec npm run start:dev\"",
+    "start:dev": "NODE_ENV=development functions-framework  --target=devRouter",
+    "test": "NODE_ENV=test LOG_FORMAT=simple LOG_LEVEL=error jest --config test/jest-config.json"
   },
-  "homepage": "https://github.com/SknUps/stock-cloudfunctions#README",
   "dependencies": {
     "@google-cloud/functions-framework": "^3.1.2",
     "axios": "^1.6.0",
@@ -61,5 +56,9 @@
     "ts-jest": "^29.0.3",
     "ts-node": "^10.8.1",
     "typescript": "^4.7.4"
+  },
+  "engines": {
+    "node": ">=18.14.2",
+    "npm": ">=9.5.0"
   }
 }
