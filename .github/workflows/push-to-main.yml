@@ -1,0 +1,46 @@
+---
+name: Push to main
+
+'on':
+  push:
+    branches:
+      - 'main'
+    paths-ignore:
+      - 'README.md'
+      - '.gitignore'
+
+env:
+  GOOGLE_PROJECT: sknups-org-admin
+  COMPONENT: stock-cloudfunctions
+  BUILD_ARTIFACTS_BUCKET: build-artifacts-09c4
+
+jobs:
+  build:
+    name: Build & Publish
+    runs-on: ubuntu-22.04
+
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    timeout-minutes: 5
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build
+        id: build
+        uses: ./.github/actions/build
+
+      - name: Publish
+        uses: ./.github/actions/publish
+        with:
+          component: ${{ env.COMPONENT }}
+          google_project: ${{ env.GOOGLE_PROJECT }}
+          build_artifacts_bucket: ${{ env.BUILD_ARTIFACTS_BUCKET }}
+          archive_file: ${{ steps.build.outputs.archive_file }}
+          version: ${{ steps.build.outputs.version }}
+          credentials_json: ${{ secrets.BUILD_ARTIFACTS_BUCKET_ADMIN  }}
+          deploy_token: ${{ secrets.DEPLOY_TOKEN }}

@@ -1,0 +1,63 @@
+---
+name: 'Publish'
+
+description: |
+  Publishes Cloud Functions project to Artifact bucket and trigger a deployment
+
+
+inputs:
+  archive_file:
+    description: 'The archive file to publish.'
+    required: true
+  component:
+    description: 'The name of the component.'
+    required: true
+  version:
+    description: 'The version of the component.'
+    required: true
+  google_project:
+    description: 'The GCP that contains the Artifact bucket'
+    required: true
+  build_artifacts_bucket:
+    description: 'The Artifact bucket'
+    required: true
+  credentials_json:
+    description: 'The credentials to authenticate with GCP to upload the artifact'
+    required: true
+  deploy_token:
+    description: 'The token to authenticate with the repository to trigger the deployment'
+
+
+runs:
+  using: composite
+
+  steps:
+
+    - name: Auth GCP
+      id: 'auth_bucket'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ inputs.credentials_json }}'
+
+    - name: Setup GCP
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ inputs.build_artifacts_bucket }}
+
+    - name: Upload
+      shell: bash
+      run: .github/actions/publish/upload-archive.sh
+      env:
+        ARCHIVE_FILE: ${{ inputs.archive_file }}
+        COMPONENT: ${{ inputs.component }}
+        ARTIFACT_BUCKET: ${{ inputs.build_artifacts_bucket }}
+
+    # Call the API to trigger the workflow that updates the version in wholesale-terraform
+    - name: Deploy
+      uses: benc-uk/workflow-dispatch@v1
+      with:
+        workflow: update_version.yml
+        repo: sknups/wholesale-terraform
+        ref: main
+        token: ${{ inputs.deploy_token }}
+        inputs: '{ "component": "${{ inputs.component }}", "version": "${{ inputs.version }}" }'

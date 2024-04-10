@@ -1,0 +1,38 @@
+---
+name: 'Build'
+
+description: |
+  Builds Typescript Cloud Functions project.
+
+outputs:
+  archive_file:
+    description: 'The archive file of compiled Javascript and files required to deploy to GCP.'
+    value: ${{ steps.package.outputs.archive_file }}
+  version:
+    description: 'The version of the artifact.'
+    value: ${{ steps.git_vars.outputs.sha_short }}
+
+runs:
+  using: composite
+  steps:
+    - name: Execute ShellCheck
+      uses: ludeeus/action-shellcheck@master
+
+    - name: Execute YAMLlint
+      uses: ibiqlik/action-yamllint@v3
+
+    - name: Build JavaScript project
+      uses: sknups/sknups-build-javascript-action@v1
+
+    - name: Extract Git Vars
+      id: git_vars
+      shell: bash
+      run: |
+        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+    - name: Package
+      shell: bash
+      id: 'package'
+      run: .github/actions/build/create-archive.sh
+      env:
+        VERSION: ${{ steps.git_vars.outputs.sha_short }}

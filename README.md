@@ -1,6 +1,12 @@
 # stock-cloudfunctions
 Cloud functions related to stock
 
+## No License
+
+This repository and its contents, including but not limited to code, documentation, and any associated files, are the property of Upskins Ltd and are not licensed for any use, modification, distribution, or reproduction. Upskins Ltd reserves all rights to the materials contained herein.
+
+Unauthorized use, reproduction, distribution, or modification of any part of this repository may violate the intellectual property rights of Upskins Ltd and may be subject to legal action.
+
 ## Local development
 
 To execute locally, you will need:
